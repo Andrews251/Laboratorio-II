@@ -1,37 +1,110 @@
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <assert.h> //libreria di funzioni di testing
+#define _GNU_SOURCE   // avverte che usiamo le estensioni GNU 
+#include <stdio.h>    // permette di usare scanf printf etc ...
+#include <stdlib.h>   // conversioni stringa/numero exit() etc ...
+#include <stdbool.h>  // gestisce tipo bool (per variabili booleane)
+#include <assert.h>   // permette di usare la funzione assert
+#include <string.h>   // funzioni di confronto/copia/etc di stringhe
+#include <errno.h>    // necessaria per usare errno
 
-//è utile utilizzare gli assert anche se siamo sicuri della correttezza del programma (un controllo in più non fa male)
-//sono anche utili proprio per verificare cosa ci si aspetta in alcuni punti del programma
+// Scopo del programma:
+//  mostrare come si legge da un file di testo 
+//  e come una funzione può restituire un array
+//  alla funzione chiamante
 
-// Scrivere una funzione void maiuscole(char *s) che riceve in input una stringa e la modifica convertendo ogni carattere in maiuscolo. 
-//Per convertire un singolo carattere in maiuscolo è necessario invocare la funzione toupper(), consultate la pagina man per l'uso.
-//Scrivere un programma boomer che invoca la funzione maiuscole sui parametri argv[1], argv[2], ... e stampa le stringhe così ottenute.
+// prototipo della funzione termina()
+void termina(const char *messaggio);
 
-void termina(const char*);
-void maiuscole(char *);
 
-int main(int argc, char *argv[]) {
+// legge gli interi che sono nel file f
+// e li salva in un array che viene restituito
+// con return + passaggio per riferimento
+int *leggi_file(FILE *f, int *num_elementi)
+{
+  assert(f!=NULL); // il file deve essere valido
+  int capacita=10; // dimensione attuale dell'array
+  int messi=0; // numero di elementi attualmente nell'array
+  int *a = malloc(capacita*sizeof(int));
+  if(a==NULL)
+    termina("Memoria insufficiente");
     
-    for(int i = 1; i < argc; i++){
-        maiuscole(&argv[i]);
-        printf("%s", argv[i]);
+  while(true) {
+    int n;
+    int e = fscanf(f,"%d",&n);
+    if(e==EOF) break;
+    if(e!=1) termina("Contenuto illegale nel file");
+    // ho letto un intero dal file ed è stato messo in n
+    // questa parte di reallocazione dell'array
+    // è la stessa che abbiamo già visto in scrivi_primi.c
+    if(messi==capacita) {
+        // ingrandisco l'array
+        capacita = capacita*2;
+        a = realloc(a,capacita*sizeof(int));
+        if(a==NULL)
+          termina("realloc fallita");
     }
+    assert(capacita>messi);
+    a[messi] = n;
+    messi += 1;
+  }
+  // ho letto tutti gli elementi
+  capacita = messi;
+  a = realloc(a,capacita*sizeof(int));
+  if(a==NULL)
+    termina("realloc fallita");  
+  // salvo il numero di elementi e restituisco l'array  
+  *num_elementi = messi;
+  return a;  
+} 
 
-    return 0;
+// visualizza elementi di un array di int su stdout 
+// stampa "Ho finito!" su stderr
+// Nota: fprintf(stdout,... è equivalente a printf(....) 
+void stampa_array(int a[], int n)
+{
+  // ----------------------- 
+  assert(a!=NULL);
+  assert(n>=0);
+  // stampo il contenuto dell'array
+  for(int i=0;i<n;i++)
+    printf("%8d",a[i]); // stampo gli elementi in un campo di 8 caratteri
+  fprintf(stdout,"\nIn totale l'array contiene %d interi\n",n);// equivalente a printf
+  fprintf(stdout,"Ho finito!\n");
+  return;
 }
 
-void maiuscole(char *s){
-    for(int i = 0; i < strlen(s); i++){
-        s[i] = toupper(s[i]);
-    }
+
+int main(int argc, char *argv[])
+{
+  // verifica siano stati forniti esattamente 2 parametri 
+  if(argc!=2) {
+    printf("Uso: %s nome_file\n",argv[0]);
+    return 1;
+  }
+  // copia il puntatore nella variabile nome_file
+  char *nome_file = argv[1];
+  
+  // apro il file in lettura 
+  FILE *f = fopen(nome_file,"rt");
+  if(f==NULL) termina("Apertura file fallita");
+
+  int n; // numero di elementi nell'array
+  int *a = leggi_file(f,&n);
+
+  // stampo gli elementi dell'array
+  stampa_array(a,n);
+
+  free(a);
+
+  // chiudi il file e termina 
+  if(fclose(f)==EOF)
+    termina("Errore chiusura file");; 
+   
+  return 0;
 }
-//stampa un messaggio d'errore e termina il programma
-void termina(const char* messaggio){
-    perror(messaggio);
-    exit(1);
+
+// stampa un messaggio d'errore e termina il programma
+void termina(const char *messaggio)
+{
+  perror(messaggio);
+  exit(1);
 }

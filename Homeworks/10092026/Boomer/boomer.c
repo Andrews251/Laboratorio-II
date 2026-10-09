@@ -13,7 +13,7 @@
 //Per convertire un singolo carattere in maiuscolo è necessario invocare la funzione toupper(), consultate la pagina man per l'uso.
 //Scrivere un programma boomer che invoca la funzione maiuscole sui parametri argv[1], argv[2], ... e stampa le stringhe così ottenute.
 
-void termina(const char*);
+
 void maiuscole(char*);
 
 int main(int argc, char *argv[]) {

@@ -18,7 +18,6 @@
 int confrontas(const char*, const char*);
 int main(int argc, char *argv[]) {
     
-    
     printf("%d\n",confrontas(argv[1], argv[2]));
     
     return 0;
